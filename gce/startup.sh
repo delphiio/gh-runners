@@ -26,22 +26,14 @@ for var in "${secretsConfig[@]}"; do
 export "${var?}"
 done
 # github runner version
-GH_RUNNER_VERSION="2.263.0"
+GH_RUNNER_VERSION="2.319.1"
+GH_RUNNER_HASH=3f6efb7488a183e291fc2c62876e14c9ee732864173734facc85a1bfb1744464
 # get actions binary
 curl -o actions.tar.gz --location "https://github.com/actions/runner/releases/download/v${GH_RUNNER_VERSION}/actions-runner-linux-x64-${GH_RUNNER_VERSION}.tar.gz"
+echo "3f6efb7488a183e291fc2c62876e14c9ee732864173734facc85a1bfb1744464  actions.tar.gz" | shasum -a 256 -c
 mkdir /runner
 mkdir /runner-tmp
 tar -zxf actions.tar.gz --directory /runner
-rm -f actions.tar.gz
-/runner/bin/installdependencies.sh
-# get actions token
-# shellcheck disable=SC2034
-# ACTIONS_RUNNER_INPUT_NAME is used by config.sh
-ACTIONS_RUNNER_INPUT_NAME=$HOSTNAME
-ACTIONS_RUNNER_INPUT_TOKEN="$(curl -sS --request POST --url "https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/actions/runners/registration-token" --header "authorization: Bearer ${GITHUB_TOKEN}"  --header 'content-type: application/json' | jq -r .token)"
-# configure runner
-RUNNER_ALLOW_RUNASROOT=1 /runner/config.sh --unattended --replace --work "/runner-tmp" --url "$REPO_URL" --token "$ACTIONS_RUNNER_INPUT_TOKEN" --labels gce-runner
-# install and start runner service
-cd /runner || exit
-./svc.sh install
-./svc.sh start
+cd /runner
+./config --url https://github.com/delphiio --token ${GITHUB_TOKEN}
+./run.sh
